@@ -113,6 +113,7 @@ int secs = 0;
 ////////////////////////////////////////////////
 
 dll::FieldItem Background = nullptr;
+dll::FieldItem Ground = nullptr;
 
 
 ///////////////////////////////////////////////
@@ -184,6 +185,8 @@ void InitGame()
     ClearObject(&Background);
     Background = dll::CreateFieldItem(fields::background, 0, 50.0f);
 
+    ClearObject(&Ground);
+    Ground = dll::CreateFieldItem(fields::field, 0, scr_height - 40.0f);
 }
 
 void GameOver()
@@ -502,11 +505,11 @@ void CreateResources()
         if (iWriteFactory)
         {
             hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
-                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 18, L"",  & nrmText);
+                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 16, L"",  & nrmText);
             hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
-                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 36, L"", &midText);
+                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 32, L"", &midText);
             hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
-                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 64, L"", &bigText);
+                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 50, L"", &bigText);
             if (hr != S_OK)
             {
                 LogError(L"Error creating D2D1 Wrte text Formats !");
@@ -658,7 +661,7 @@ void CreateResources()
         }
     }
 
-    D2D1_RECT_F IntroRect = { 100.0f,100.0f,scr_width,scr_height };
+    D2D1_RECT_F IntroRect = { 10.0f,150.0f,scr_width,scr_height };
 
     wchar_t intro_text[30] = L"БЕСНИ ДОБИТЪЦИ !\n\ndev. Daniel";
     wchar_t show_text[30] = L"\0";
@@ -698,8 +701,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             if (show_help)continue;
             if (Draw && bigText && TxtBrush)
             {
+                Draw->BeginDraw();
                 Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));
-                Draw->DrawTextW(L"ПАУЗА", 6, bigText, D2D1::RectF(scr_width / 2 - 50.0f, scr_height / 2 - 50.0f,
+                Draw->DrawTextW(L"ПАУЗА", 6, bigText, D2D1::RectF(scr_width / 2 - 100.0f, scr_height / 2 - 50.0f,
                     scr_width, scr_height), TxtBrush);
                 Draw->EndDraw();
                 continue;
@@ -720,11 +724,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             Draw->BeginDraw();
             Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), ButBckgBrush);
             if (name_set)
-                Draw->DrawText(L"ИМЕ НА СТРЕЛЕЦ", 15, nrmText, b1Rect, InactTxt);
+                Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, InactTxt);
             else
             {
-                if (b1Hglt)Draw->DrawText(L"ИМЕ НА СТРЕЛЕЦ", 15, nrmText, b1Rect, HgltTxt);
-                else Draw->DrawText(L"ИМЕ НА СТРЕЛЕЦ", 15, nrmText, b1Rect, TxtBrush);
+                if (b1Hglt)Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, HgltTxt);
+                else Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, TxtBrush);
             }
             if (b2Hglt)Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2Rect, HgltTxt);
             else Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2Rect, TxtBrush);
@@ -733,6 +737,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         }
         Draw->DrawBitmap(bmpBackground[Background->GetFrame()], D2D1::RectF(Background->x, Background->y,
             Background->ex, Background->ey));
+        Draw->DrawBitmap(bmpField, D2D1::RectF(Ground->x, Ground->y, Ground->ex, Ground->ey));
+
+
+
+
 
 
 

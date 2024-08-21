@@ -17,6 +17,7 @@ enum class fields { background = 0, field = 1, h_board = 2, v_board = 3, prem_h_
 constexpr float scr_width = 600.0f;
 constexpr float scr_height = 550.0f;
 
+
 namespace dll
 {
 	
@@ -140,7 +141,7 @@ namespace dll
 			int GetFrame()
 			{
 				frame_delay++;
-				if (frame_delay > 10)
+				if (frame_delay > 5)
 				{
 					frame_delay = 0;
 					frame++;
@@ -154,7 +155,7 @@ namespace dll
 				delete this;
 			}
 
-			friend BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y);
+			ENGINE_API friend BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y);
 	};
 
 	class ENGINE_API BASIC_PIG :public ITEM
@@ -192,7 +193,7 @@ namespace dll
 
 			virtual ~BASIC_PIG() {};
 
-			friend BASIC_PIG* CreatePig(float first_x, float first_y, pigs what);
+			ENGINE_API friend BASIC_PIG* CreatePig(float first_x, float first_y, pigs what);
 
 			void Release()
 			{
@@ -373,7 +374,7 @@ namespace dll
 								destination_x = x + (x - initial_x);
 								initial_x = x;
 								initial_y = y;
-								destination_y = scr_height - 100;
+								destination_y = scr_height - 40.0f;
 								go_up = false;
 
 								SetJumpData(initial_x, initial_y, destination_x, destination_y);
@@ -395,7 +396,7 @@ namespace dll
 										destination_x = x + (x - initial_x);
 										initial_x = x;
 										initial_y = y;
-										destination_y = scr_height - 100;
+										destination_y = scr_height - 40.0f;
 										go_up = false;
 
 										SetJumpData(initial_x, initial_y, destination_x, destination_y);
@@ -412,7 +413,7 @@ namespace dll
 										destination_x = x + (x - initial_x);
 										initial_x = x;
 										initial_y = y;
-										destination_y = scr_height - 100;
+										destination_y = scr_height - 40.0f;
 										go_up = false;
 
 										SetJumpData(initial_x, initial_y, destination_x, destination_y);
@@ -433,7 +434,7 @@ namespace dll
 										destination_x = x + (x - initial_x);
 										initial_x = x;
 										initial_y = y;
-										destination_y = scr_height - 100;
+										destination_y = scr_height - 40.0f;
 										go_up = false;
 
 										SetJumpData(initial_x, initial_y, destination_x, destination_y);
@@ -450,7 +451,7 @@ namespace dll
 										destination_x = x + (x - initial_x);
 										initial_x = x;
 										initial_y = y;
-										destination_y = scr_height - 100;
+										destination_y = scr_height - 40.0f;
 										go_up = false;
 
 										SetJumpData(initial_x, initial_y, destination_x, destination_y);
@@ -522,7 +523,7 @@ namespace dll
 				return true;
 			}
 	
-			friend BASIC_BIRD* CreateBird(float first_x, float first_y, birds what);
+			ENGINE_API friend BASIC_BIRD* CreateBird(float first_x, float first_y, birds what);
 	};
 
 	/////////////////////////////////////////////////////////////
@@ -531,24 +532,9 @@ namespace dll
 	typedef BASIC_PIG* Pig;
 	typedef BASIC_BIRD* Bird;
 
+	ENGINE_API BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y);
+	ENGINE_API BASIC_PIG* CreatePig(float first_x, float first_y, pigs what);
+	ENGINE_API BASIC_BIRD* CreateBird(float first_x, float first_y, birds what);
 	
-	BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y)
-	{
-
-		BASIC_FIELD* ret = nullptr;
-		ret = new BASIC_FIELD(what_field, where_x, where_y);
-		return ret;
-	}
-	BASIC_PIG* CreatePig(float first_x, float first_y, pigs what)
-	{
-		BASIC_PIG* ret = nullptr;
-		ret = new BASIC_PIG(what, first_x, first_y);
-		return ret;
-	}
-	BASIC_BIRD* CreateBird(float first_x, float first_y, birds what)
-	{
-		Bird ret = nullptr;
-		ret = new BASIC_BIRD(what, first_x, first_y);
-		return ret;
-	}
 }
+
