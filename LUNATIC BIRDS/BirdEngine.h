@@ -19,6 +19,7 @@ constexpr float scr_height = 550.0f;
 
 namespace dll
 {
+	
 	class ENGINE_API ITEM
 	{
 		protected:
@@ -530,7 +531,24 @@ namespace dll
 	typedef BASIC_PIG* Pig;
 	typedef BASIC_BIRD* Bird;
 
-	extern BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y);
-	extern BASIC_PIG* CreatePig(float first_x, float first_y, pigs what);
-	extern BASIC_BIRD* CreateBird(float first_x, float first_y, birds what);
+	
+	BASIC_FIELD* CreateFieldItem(fields what_field, float where_x, float where_y)
+	{
+
+		BASIC_FIELD* ret = nullptr;
+		ret = new BASIC_FIELD(what_field, where_x, where_y);
+		return ret;
+	}
+	BASIC_PIG* CreatePig(float first_x, float first_y, pigs what)
+	{
+		BASIC_PIG* ret = nullptr;
+		ret = new BASIC_PIG(what, first_x, first_y);
+		return ret;
+	}
+	BASIC_BIRD* CreateBird(float first_x, float first_y, birds what)
+	{
+		Bird ret = nullptr;
+		ret = new BASIC_BIRD(what, first_x, first_y);
+		return ret;
+	}
 }
