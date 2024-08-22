@@ -12,7 +12,7 @@ enum class birds { bomb = 0, gray = 1, red = 2, yellow = 3 };
 
 enum class pigs { pig = 0, big_pig = 1 };
 
-enum class fields { background = 0, field = 1, h_board = 2, v_board = 3, prem_h_board = 4, prem_v_board = 5 };
+enum class fields { background = 0, field = 1, h_board = 2, v_board = 3, prem_h_board = 4, prem_v_board = 5, sling = 6 };
 
 constexpr float scr_width = 600.0f;
 constexpr float scr_height = 550.0f;
@@ -85,6 +85,8 @@ namespace dll
 			fields type = fields::background;
 			int frame = 0;
 			int frame_delay = 0;
+			int max_frame_delay = 0;
+			int max_frames = 0;
 
 			BASIC_FIELD(fields what, float sx, float sy) :ITEM(sx, sy)
 			{
@@ -95,6 +97,15 @@ namespace dll
 				case fields::background:
 					NewDims(600.0f, 550.0f);
 					lifes = 0;
+					max_frames = 9;
+					max_frame_delay = 5;
+					break;
+
+				case fields::sling:
+					NewDims(170.0f, 150.0f);
+					lifes = 0;
+					max_frames = 5;
+					max_frame_delay = 9;
 					break;
 
 				case fields::field:
@@ -141,13 +152,19 @@ namespace dll
 			int GetFrame()
 			{
 				frame_delay++;
-				if (frame_delay > 5)
+				if (frame_delay > max_frame_delay)
 				{
 					frame_delay = 0;
 					frame++;
-					if (frame > 9)frame = 0;
+					if (frame > max_frames)frame = 0;
 				}
 				return frame;
+			}
+
+			void InitFrame()
+			{
+				frame = 0;
+				frame_delay = 0;
 			}
 
 			void Release()
@@ -221,6 +238,11 @@ namespace dll
 				if (frame > max_frames)frame = 0;
 				return frame;
 			}
+
+			pigs GetType() const
+			{
+				return type;
+			}
 	};
 
 	class ENGINE_API BASIC_BIRD :public ITEM
@@ -261,7 +283,7 @@ namespace dll
 
 				case birds::bomb:
 					NewDims(61.0f, 80.0f);
-					max_frames = 2;
+					max_frames = 1;
 					frame_delay = 20;
 					damage = 30;
 					break;
@@ -342,6 +364,11 @@ namespace dll
 				}
 				if (frame > max_frames)frame = 0;
 				return frame;
+			}
+
+			birds GetType() const
+			{
+				return type;
 			}
 
 			bool Shoot(float sx,float sy,float dest_x,float dest_y)

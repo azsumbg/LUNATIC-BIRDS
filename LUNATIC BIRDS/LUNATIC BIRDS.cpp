@@ -109,12 +109,20 @@ ID2D1Bitmap* bmpBigPig[15] = { nullptr };
 int score = 0;
 int mins = 0;
 int secs = 0;
+int gold = 30;
 
 ////////////////////////////////////////////////
 
 dll::FieldItem Background = nullptr;
 dll::FieldItem Ground = nullptr;
+dll::FieldItem Sling = nullptr;
+bool now_shooting = false;
 
+dll::Bird Terminator = nullptr;
+float terminator_dest_x = 0;
+float terminator_dest_y = 0;
+
+birds BirdPool[5];
 
 ///////////////////////////////////////////////
 
@@ -181,12 +189,19 @@ void InitGame()
     score = 0;
     mins = 0;
     secs = 0;
+    gold = 30;
 
     ClearObject(&Background);
     Background = dll::CreateFieldItem(fields::background, 0, 50.0f);
 
     ClearObject(&Ground);
     Ground = dll::CreateFieldItem(fields::field, 0, scr_height - 40.0f);
+
+    ClearObject(&Sling);
+    Sling = dll::CreateFieldItem(fields::sling, 2.0f, scr_height - 170.0f);
+
+    ClearObject(&Terminator);
+    for (int i = 0; i < 5; i++)BirdPool[i] = static_cast<birds>(rand() % 4);
 }
 
 void GameOver()
@@ -287,6 +302,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         if (pause)break;
         secs++;
         mins = secs / 60;
+        if (secs % 5 == 0)gold += 10;
         break;
 
     case WM_SETCURSOR:
@@ -392,6 +408,12 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         }
         break;
 
+    case WM_LBUTTONDOWN:
+        if (now_shooting || Terminator)break;
+        now_shooting = true;
+        terminator_dest_x = LOWORD(lParam);
+        terminator_dest_y = HIWORD(lParam);
+        break;
 
     default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
     }
@@ -711,6 +733,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         }
         /////////////////////////////////////////////////////////
 
+        // TERMINATOR ******************************************
+
+        if (Terminator)
+        {
+            if (!Terminator->Shoot(Terminator->x, Terminator->y, terminator_dest_x, terminator_dest_y))
+            {
+                ClearObject(&Terminator);
+            }
+        }
+
+
+        ///////////////////////////////////////////////////////
 
 
 
@@ -738,12 +772,156 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         Draw->DrawBitmap(bmpBackground[Background->GetFrame()], D2D1::RectF(Background->x, Background->y,
             Background->ex, Background->ey));
         Draw->DrawBitmap(bmpField, D2D1::RectF(Ground->x, Ground->y, Ground->ex, Ground->ey));
+        if (Sling)
+        {
+            if (now_shooting)
+            {
+                int frame = Sling->GetFrame();
+                if (frame < 5)Draw->DrawBitmap(bmpSling[frame], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
+                   
+                else
+                {
+                    Draw->DrawBitmap(bmpSling[5], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
+                    Sling->InitFrame();
+                    now_shooting = false;
+                    
+                    birds TempPool[5];
+                    for (int i = 0; i < 4; i++)TempPool[i] = BirdPool[i + 1];
+                    TempPool[4] = static_cast<birds>(rand() % 4);
+                    bool bird_shooted = false;
+
+                    switch (BirdPool[0])
+                    {
+                    case birds::bomb:
+                        if (gold >= 50)
+                        {
+                            gold -= 50;
+                            Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::bomb);
+                            bird_shooted = true;
+                        }
+                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        break;
+
+                    case birds::red:
+                        if (gold >= 40)
+                        {
+                            gold -= 40;
+                            Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::red);
+                            bird_shooted = true;
+                        }
+                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        break;
+
+                    case birds::gray:
+                        if (gold >= 30)
+                        {
+                            gold -= 30;
+                            Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::gray);
+                            bird_shooted = true;
+                        }
+                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        break;
+
+                    case birds::yellow:
+                        if (gold >= 20)
+                        {
+                            gold -= 20;
+                            Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::yellow);
+                            bird_shooted = true;
+                        }
+                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        break;
+                    }
+                    
+                    if (bird_shooted)
+                        for (int i = 0; i < 5; i++)BirdPool[i] = TempPool[i];
+                }
+            }
+            else
+                Draw->DrawBitmap(bmpSling[0], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
+        }
+        if (Terminator)
+        {
+            switch (Terminator->GetType())
+            {
+            case birds::red:
+                Draw->DrawBitmap(bmpRed[Terminator->GetFrame()], D2D1::RectF(Terminator->x, Terminator->y,
+                    Terminator->ex, Terminator->ey));
+                break;
+
+            case birds::gray:
+                Draw->DrawBitmap(bmpGray[Terminator->GetFrame()], D2D1::RectF(Terminator->x, Terminator->y,
+                    Terminator->ex, Terminator->ey));
+                break;
+
+            case birds::bomb:
+                Draw->DrawBitmap(bmpBomb[Terminator->GetFrame()], D2D1::RectF(Terminator->x, Terminator->y,
+                    Terminator->ex, Terminator->ey));
+                break;
+
+            case birds::yellow:
+                Draw->DrawBitmap(bmpYellow[Terminator->GetFrame()], D2D1::RectF(Terminator->x, Terminator->y,
+                    Terminator->ex, Terminator->ey));
+                break;
+            }
+        }
+        for(int i = 0; i < 5; i++)
+            switch (BirdPool[i])
+            {
+            case birds::red:
+                Draw->DrawBitmap(bmpRed[0], D2D1::RectF(300.0f + i * 50.0f, 50.0f, 300.0f + i * 50.0f + 50.0f, 100.0f));
+                break;
+
+            case birds::gray:
+                Draw->DrawBitmap(bmpGray[0], D2D1::RectF(300.0f + i * 50.0f, 50.0f, 300.0f + i * 50.0f + 50.0f, 100.0f));
+                break;
+
+            case birds::bomb:
+                Draw->DrawBitmap(bmpBomb[0], D2D1::RectF(300.0f + i * 50.0f, 50.0f, 300.0f + i * 50.0f + 50.0f, 100.0f));
+                break;
+
+            case birds::yellow:
+                Draw->DrawBitmap(bmpYellow[0], D2D1::RectF(300.0f + i * 50.0f, 50.0f, 300.0f + i * 50.0f + 50.0f, 100.0f));
+                break;
+            }
 
 
 
 
 
+        //STATUS ****************
+        wchar_t stat_line[200] = L"СТРЕЛЕЦ: ";
+        wchar_t add[5] = L"\0";
+        int size = 0;
 
+        wcscat_s(stat_line, current_player);
+        
+        wcscat_s(stat_line, L", ЗЛАТО: ");
+        wsprintf(add, L"%d", gold);
+        wcscat_s(stat_line, add);
+        
+        wcscat_s(stat_line, L", РЕЗУЛТАТ: ");
+        wsprintf(add, L"%d", score);
+        wcscat_s(stat_line, add);
+        
+        if (mins <= 9)wcscat_s(stat_line, L" 0");
+        wsprintf(add, L"%d", mins);
+        wcscat_s(stat_line, add);
+        wcscat_s(stat_line, L" : ");
+
+        if (secs - mins * 60 <= 9)wcscat_s(stat_line, L" 0");
+        wsprintf(add, L"%d", secs - mins * 60);
+        wcscat_s(stat_line, add);
+
+        for (int i = 0; i < 200; i++)
+        {
+            if (stat_line[i] != '\0')size++;
+            else break;
+
+        }
+
+        if (nrmText && HgltTxt)
+            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(20.0f, scr_height - 30.0f, scr_width, scr_height), HgltTxt);
 
         //////////////////////
         Draw->EndDraw();
