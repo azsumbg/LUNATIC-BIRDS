@@ -114,22 +114,22 @@ namespace dll
 					break;
 
 				case fields::h_board:
-					NewDims(150.0f, 65.0f);
+					NewDims(100.0f, 45.0f);
 					lifes = 100;
 					break;
 
 				case fields::v_board:
-					NewDims(204.0f, 150.0f);
+					NewDims(100.0f, 75.0f);
 					lifes = 100;
 					break;
 
 				case fields::prem_h_board:
-					NewDims(235.0f, 150.0f);
+					NewDims(150.0f, 95.0f);
 					lifes = 200;
 					break;
 
 				case fields::prem_v_board:
-					NewDims(175.0f, 200.0f);
+					NewDims(100.0f, 115.0f);
 					lifes = 200;
 					break;
 				}
@@ -197,7 +197,7 @@ namespace dll
 					break;
 
 				case pigs::big_pig:
-					NewDims(100.0f, 840.0f);
+					NewDims(100.0f, 84.0f);
 					max_frames = 14;
 					frame_delay = 3;
 					lifes = 200;

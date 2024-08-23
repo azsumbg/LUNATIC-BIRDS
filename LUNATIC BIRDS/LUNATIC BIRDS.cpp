@@ -110,6 +110,8 @@ int score = 0;
 int mins = 0;
 int secs = 0;
 int gold = 30;
+int level = 1;
+
 
 ////////////////////////////////////////////////
 
@@ -123,6 +125,9 @@ float terminator_dest_x = 0;
 float terminator_dest_y = 0;
 
 birds BirdPool[5];
+
+dll::Pig Evil = nullptr;
+std::vector<dll::FieldItem> vBoards;
 
 ///////////////////////////////////////////////
 
@@ -182,6 +187,76 @@ void ErrExit(int what)
     std::remove(temp_file);
     exit(1);
 }
+void InitLevel()
+{
+    if (level > 1)
+    {
+        mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
+        if (Draw && bigText && TxtBrush)
+        {
+            for (int i = 0; i < 27; i++)
+            {
+                Draw->BeginDraw();
+                Draw->Clear(D2D1::ColorF(D2D1::ColorF::Beige));
+                if (i % 2 == 0)
+                    Draw->DrawTextW(L"СЛЕДВАЩО НИВО !", 16, bigText, D2D1::RectF(50.0f, 200.0f, scr_width, scr_height), TxtBrush);
+                Draw->EndDraw();
+            }
+        }
+        if (!vBoards.empty())
+            for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
+        vBoards.clear();
+    }
+
+    float next_board_x = 250.0f;
+    float next_board_y = 120.0f;
+
+    for (int i = 0; i < 4; i++)
+    {
+        switch (rand() % 2)
+        {
+        case 0:
+            vBoards.push_back(dll::CreateFieldItem(fields::h_board, 450.0f, next_board_y));
+            next_board_y += 45.0f;
+            break;
+
+        case 1:
+            vBoards.push_back(dll::CreateFieldItem(fields::prem_h_board, 450.0f, next_board_y));
+            next_board_y += 96.0f;
+            break;
+        }
+        
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        switch (rand() % 2)
+        {
+        case 0:
+            vBoards.push_back(dll::CreateFieldItem(fields::v_board, next_board_x, scr_height - 115.0f));
+            next_board_x += 101.0f;
+            break;
+
+        case 1:
+            vBoards.push_back(dll::CreateFieldItem(fields::prem_v_board, next_board_x, scr_height - 155.0f));
+            next_board_x += 101;
+            break;
+        }
+    }
+    
+    ClearObject(&Evil);
+    switch (rand() % 2)
+    {
+    case 0:
+        Evil = dll::CreatePig(460.0f, scr_height - 150.0f, pigs::pig);
+        break;
+
+    case 1:
+        Evil = dll::CreatePig(460.0f, scr_height - 125.0f, pigs::big_pig);
+        break;
+    }
+
+
+}
 void InitGame()
 {
     wcscpy_s(current_player, L"ONE CRAZY BIRD");
@@ -190,6 +265,7 @@ void InitGame()
     mins = 0;
     secs = 0;
     gold = 30;
+    level = 1;
 
     ClearObject(&Background);
     Background = dll::CreateFieldItem(fields::background, 0, 50.0f);
@@ -202,6 +278,15 @@ void InitGame()
 
     ClearObject(&Terminator);
     for (int i = 0; i < 5; i++)BirdPool[i] = static_cast<birds>(rand() % 4);
+
+    ClearObject(&Evil);
+
+    if (!vBoards.empty())
+        for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
+    vBoards.clear();
+    
+    
+    InitLevel();
 }
 
 void GameOver()
@@ -884,9 +969,43 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 Draw->DrawBitmap(bmpYellow[0], D2D1::RectF(300.0f + i * 50.0f, 50.0f, 300.0f + i * 50.0f + 50.0f, 100.0f));
                 break;
             }
+        if (!vBoards.empty())
+        {
+            for (std::vector<dll::FieldItem>::iterator it = vBoards.begin(); it < vBoards.end(); it++)
+            {
+                switch ((*it)->GetType())
+                {
+                case fields::h_board:
+                    Draw->DrawBitmap(bmpHBoard, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
 
+                case fields::v_board:
+                    Draw->DrawBitmap(bmpVBoard, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
 
+                case fields::prem_h_board:
+                    Draw->DrawBitmap(bmpPremHBoard, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
 
+                case fields::prem_v_board:
+                    Draw->DrawBitmap(bmpPremVBoard, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
+                }
+            }
+        }
+        if (Evil)
+        {
+            switch (Evil->GetType())
+            {
+            case pigs::pig:
+                Draw->DrawBitmap(bmpPig[Evil->GetFrame()], D2D1::RectF(Evil->x, Evil->y, Evil->ex, Evil->ey));
+                break;
+
+            case pigs::big_pig:
+                Draw->DrawBitmap(bmpBigPig[Evil->GetFrame()], D2D1::RectF(Evil->x, Evil->y, Evil->ex, Evil->ey));
+                break;
+            }
+        }
 
 
         //STATUS ****************
