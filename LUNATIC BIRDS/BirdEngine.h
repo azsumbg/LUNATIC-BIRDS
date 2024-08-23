@@ -260,6 +260,7 @@ namespace dll
 			float destination_y = 0;
 
 			bool vertical_line = false;
+			bool horizontal_line = false;
 			bool go_up = true;
 
 			int frame = 0;
@@ -277,29 +278,29 @@ namespace dll
 				case birds::red:
 					NewDims(75.0f, 60.0f);
 					max_frames = 6;
-					frame_delay = 12;
-					damage = 20;
+					frame_delay = 8;
+					damage = 60;
 					break;
 
 				case birds::bomb:
 					NewDims(61.0f, 80.0f);
 					max_frames = 1;
-					frame_delay = 20;
-					damage = 30;
+					frame_delay = 15;
+					damage = 80;
 					break;
 
 				case birds::gray:
 					NewDims(60.0f, 50.0f);
 					max_frames = 11;
 					frame_delay = 8;
-					damage = 15;
+					damage = 50;
 					break;
 
 				case birds::yellow:
 					NewDims(50.0f, 48.0f);
 					max_frames = 8;
-					frame_delay = 10;
-					damage = 10;
+					frame_delay = 5;
+					damage = 55;
 					break;
 				}
 			}
@@ -331,7 +332,8 @@ namespace dll
 
 			int GetDamage() const
 			{
-				return damage;
+				if (go_up) return damage;
+				else return damage * 1.5;
 			}
 
 			int GetFrame()
@@ -377,10 +379,12 @@ namespace dll
 				{
 					flying = true;
 					
-					initial_x = x;
-					initial_y = y;
+					initial_x = sx;
+					initial_y = sy;
 					destination_x = dest_x;
 					destination_y = dest_y;
+
+					if (initial_y == destination_y)horizontal_line = true;
 
 					SetJumpData(sx, sy, dest_x, dest_y);
 				}
@@ -388,6 +392,23 @@ namespace dll
 				{
 					if (go_up)
 					{
+						if (horizontal_line)
+						{
+							if (dir == dirs::right)
+							{
+								x++;
+								SetEdges();
+								if (x <= scr_width)return true;
+								else return false;
+							}
+							if (dir == dirs::left)
+							{
+								x--;
+								SetEdges();
+								if (ex >= 0)return true;
+								else return false;
+							}
+						}
 						if (vertical_line)
 						{
 							if (y > destination_y)
@@ -396,7 +417,7 @@ namespace dll
 								SetEdges();
 								return true;
 							}
-							else
+							else 
 							{
 								destination_x = x + (x - initial_x);
 								initial_x = x;
@@ -549,6 +570,7 @@ namespace dll
 
 				return true;
 			}
+
 	
 			ENGINE_API friend BASIC_BIRD* CreateBird(float first_x, float first_y, birds what);
 	};

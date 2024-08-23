@@ -192,15 +192,16 @@ void InitLevel()
     if (level > 1)
     {
         mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
-        if (Draw && bigText && TxtBrush)
+        if (Draw && bigText && HgltTxt)
         {
             for (int i = 0; i < 27; i++)
             {
                 Draw->BeginDraw();
                 Draw->Clear(D2D1::ColorF(D2D1::ColorF::Beige));
                 if (i % 2 == 0)
-                    Draw->DrawTextW(L"СЛЕДВАЩО НИВО !", 16, bigText, D2D1::RectF(50.0f, 200.0f, scr_width, scr_height), TxtBrush);
+                    Draw->DrawTextW(L"СЛЕДВАЩО НИВО !", 16, bigText, D2D1::RectF(50.0f, 200.0f, scr_width, scr_height), HgltTxt);
                 Draw->EndDraw();
+                Sleep(100);
             }
         }
         if (!vBoards.empty())
@@ -210,6 +211,7 @@ void InitLevel()
 
     float next_board_x = 250.0f;
     float next_board_y = 120.0f;
+    gold = 50;
 
     for (int i = 0; i < 4; i++)
     {
@@ -254,8 +256,6 @@ void InitLevel()
         Evil = dll::CreatePig(460.0f, scr_height - 125.0f, pigs::big_pig);
         break;
     }
-
-
 }
 void InitGame()
 {
@@ -264,7 +264,7 @@ void InitGame()
     score = 0;
     mins = 0;
     secs = 0;
-    gold = 30;
+    gold = 50;
     level = 1;
 
     ClearObject(&Background);
@@ -387,7 +387,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         if (pause)break;
         secs++;
         mins = secs / 60;
-        if (secs % 5 == 0)gold += 10;
+        if (secs % 2 == 0)gold += 10;
         break;
 
     case WM_SETCURSOR:
@@ -827,7 +827,41 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 ClearObject(&Terminator);
             }
         }
-
+        if (Terminator && !vBoards.empty())
+        {
+            for (std::vector<dll::FieldItem>::iterator board = vBoards.begin(); board < vBoards.end(); ++board)
+            {
+                if (!(Terminator->x >= (*board)->ex || Terminator->ex <= (*board)->x
+                    || Terminator->y >= (*board)->ey || Terminator->ey <= (*board)->y))
+                {
+                    (*board)->lifes -= Terminator->GetDamage();
+                    ClearObject(&Terminator);
+                    if ((*board)->lifes <= 0)
+                    {
+                        score += 20;
+                        (*board)->Release();
+                        vBoards.erase(board);
+                    }
+                    break;
+                }
+            }
+        }
+        if (Terminator && Evil)
+        {
+            if (!(Terminator->x > Evil->ex || Terminator->ex<Evil->x
+                || Terminator->y>Evil->ey || Terminator->ey < Evil->y))
+            {
+                Evil->lifes -= Terminator->GetDamage();
+                ClearObject(&Terminator);
+                if (Evil->lifes <= 0)
+                {
+                    level++;
+                    score += 200 - secs;
+                    if (score <= 0)score = 0;
+                    InitLevel();
+                }
+            }
+        }
 
         ///////////////////////////////////////////////////////
 
@@ -1040,7 +1074,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         }
 
         if (nrmText && HgltTxt)
-            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(20.0f, scr_height - 30.0f, scr_width, scr_height), HgltTxt);
+            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(10.0f, scr_height - 35.0f, scr_width, scr_height), HgltTxt);
 
         //////////////////////
         Draw->EndDraw();
