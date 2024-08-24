@@ -848,6 +848,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     || Terminator->y >= (*board)->ey || Terminator->ey <= (*board)->y))
                 {
                     (*board)->lifes -= Terminator->GetDamage();
+                    if (sound)mciSendString(L"play .\\res\\snd\\crush.wav", NULL, NULL, NULL);
                     ClearObject(&Terminator);
                     if ((*board)->lifes <= 0)
                     {
@@ -868,10 +869,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 ClearObject(&Terminator);
                 if (Evil->lifes <= 0)
                 {
+                    if (sound)
+                    {
+                        if (Evil->GetType() == pigs::pig)mciSendString(L"play .\\res\\snd\\die1.wav", NULL, NULL, NULL);
+                        else mciSendString(L"play .\\res\\snd\\die2.wav", NULL, NULL, NULL);
+                        Sleep(100);
+                    }
                     level++;
                     score += 200 - secs;
                     if (score <= 0)score = 0;
                     InitLevel();
+                }
+                if (sound)
+                {
+                    if (Evil->GetType() == pigs::pig)mciSendString(L"play .\\res\\snd\\hit1.wav", NULL, NULL, NULL);
+                    else mciSendString(L"play .\\res\\snd\\hit2.wav", NULL, NULL, NULL);
                 }
             }
         }
@@ -909,8 +921,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             if (now_shooting)
             {
                 int frame = Sling->GetFrame();
-                if (frame < 5)Draw->DrawBitmap(bmpSling[frame], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
-                   
+                if (frame < 5)Draw->DrawBitmap(bmpSling[frame], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));   
                 else
                 {
                     Draw->DrawBitmap(bmpSling[5], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
@@ -927,41 +938,45 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     case birds::bomb:
                         if (gold >= 50)
                         {
+                            if (sound)mciSendString(L"play .\\res\\snd\\yupee.wav", NULL, NULL, NULL);
                             gold -= 50;
                             Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::bomb);
                             bird_shooted = true;
                         }
-                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        else if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
                         break;
 
                     case birds::red:
                         if (gold >= 40)
                         {
+                            if (sound)mciSendString(L"play .\\res\\snd\\yupee.wav", NULL, NULL, NULL);
                             gold -= 40;
                             Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::red);
                             bird_shooted = true;
                         }
-                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        else if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
                         break;
 
                     case birds::gray:
                         if (gold >= 30)
                         {
+                            if (sound)mciSendString(L"play .\\res\\snd\\yupee.wav", NULL, NULL, NULL);
                             gold -= 30;
                             Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::gray);
                             bird_shooted = true;
                         }
-                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        else if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
                         break;
 
                     case birds::yellow:
                         if (gold >= 20)
                         {
+                            if (sound)mciSendString(L"play .\\res\\snd\\yupee.wav", NULL, NULL, NULL);
                             gold -= 20;
                             Terminator = dll::CreateBird(Sling->ex - 25.0f, Sling->y, birds::yellow);
                             bird_shooted = true;
                         }
-                        else mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        else if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
                         break;
                     }
                     
