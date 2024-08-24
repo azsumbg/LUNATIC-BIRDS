@@ -12,7 +12,8 @@ enum class birds { bomb = 0, gray = 1, red = 2, yellow = 3 };
 
 enum class pigs { pig = 0, big_pig = 1 };
 
-enum class fields { background = 0, field = 1, h_board = 2, v_board = 3, prem_h_board = 4, prem_v_board = 5, sling = 6 };
+enum class fields { background = 0, field = 1, h_board = 2, v_board = 3, prem_h_board = 4, 
+	prem_v_board = 5, sling = 6, rock = 7 };
 
 constexpr float scr_width = 600.0f;
 constexpr float scr_height = 550.0f;
@@ -111,6 +112,11 @@ namespace dll
 				case fields::field:
 					NewDims(600.0f, 100.0f);
 					lifes = 0;
+					break;
+
+				case fields::rock:
+					NewDims(100.0f, 100.0f);
+					lifes = 10000;
 					break;
 
 				case fields::h_board:

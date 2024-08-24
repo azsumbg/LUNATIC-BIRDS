@@ -94,6 +94,7 @@ ID2D1Bitmap* bmpHBoard = nullptr;
 ID2D1Bitmap* bmpVBoard = nullptr;
 ID2D1Bitmap* bmpPremHBoard = nullptr;
 ID2D1Bitmap* bmpPremVBoard = nullptr;
+ID2D1Bitmap* bmpRock = nullptr;
 
 ID2D1Bitmap* bmpBomb[2] = { nullptr };
 ID2D1Bitmap* bmpGray[12] = { nullptr };
@@ -169,6 +170,7 @@ void ReleaseResources()
     ClearObject(&bmpVBoard);
     ClearObject(&bmpPremHBoard);
     ClearObject(&bmpPremVBoard);
+    ClearObject(&bmpRock);
 
     for (int i = 0; i < 10; i++)ClearObject(&bmpBackground[i]);
     for (int i = 0; i < 2; i++)ClearObject(&bmpBomb[i]);
@@ -231,14 +233,19 @@ void InitLevel()
     }
     for (int i = 0; i < 2; i++)
     {
-        switch (rand() % 2)
+        switch (rand() % 3)
         {
         case 0:
-            vBoards.push_back(dll::CreateFieldItem(fields::v_board, next_board_x, scr_height - 115.0f));
+            vBoards.push_back(dll::CreateFieldItem(fields::rock, next_board_x, scr_height - 140.0f));
             next_board_x += 101.0f;
             break;
 
         case 1:
+            vBoards.push_back(dll::CreateFieldItem(fields::v_board, next_board_x, scr_height - 115.0f));
+            next_board_x += 101.0f;
+            break;
+
+        case 2:
             vBoards.push_back(dll::CreateFieldItem(fields::prem_v_board, next_board_x, scr_height - 155.0f));
             next_board_x += 101;
             break;
@@ -654,6 +661,12 @@ void CreateResources()
             LogError(L"Error loading bmpPremVBoard !");
             ErrExit(eD2D);
         }
+        bmpRock = Load(L".\\res\\img\\field\\rock.png", Draw);
+        if (!bmpRock)
+        {
+            LogError(L"Error loading bmpRock !");
+            ErrExit(eD2D);
+        }
         for (int i = 0; i < 10; i++)
         {
             wchar_t name[150] = L".\\res\\img\\field\\background\\";
@@ -1023,6 +1036,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
                 case fields::prem_v_board:
                     Draw->DrawBitmap(bmpPremVBoard, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
+
+                case fields::rock:
+                    Draw->DrawBitmap(bmpRock, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
                     break;
                 }
             }
