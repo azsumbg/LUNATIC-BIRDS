@@ -82,6 +82,7 @@ ID2D1RadialGradientBrush* ButBckgBrush = nullptr;
 ID2D1SolidColorBrush* TxtBrush = nullptr;
 ID2D1SolidColorBrush* InactTxt = nullptr;
 ID2D1SolidColorBrush* HgltTxt = nullptr;
+ID2D1SolidColorBrush* LifeBrush = nullptr;
 
 IDWriteFactory* iWriteFactory = nullptr;
 IDWriteTextFormat* nrmText = nullptr;
@@ -95,6 +96,7 @@ ID2D1Bitmap* bmpVBoard = nullptr;
 ID2D1Bitmap* bmpPremHBoard = nullptr;
 ID2D1Bitmap* bmpPremVBoard = nullptr;
 ID2D1Bitmap* bmpRock = nullptr;
+ID2D1Bitmap* bmpSpit = nullptr;
 
 ID2D1Bitmap* bmpBomb[2] = { nullptr };
 ID2D1Bitmap* bmpGray[12] = { nullptr };
@@ -120,6 +122,7 @@ dll::FieldItem Background = nullptr;
 dll::FieldItem Ground = nullptr;
 dll::FieldItem Sling = nullptr;
 bool now_shooting = false;
+int sling_lifes = 200;
 
 dll::Bird Terminator = nullptr;
 float terminator_dest_x = 0;
@@ -129,6 +132,7 @@ birds BirdPool[5];
 
 dll::Pig Evil = nullptr;
 std::vector<dll::FieldItem> vBoards;
+std::vector<dll::ITEM> vSpits;
 
 ///////////////////////////////////////////////
 
@@ -160,6 +164,7 @@ void ReleaseResources()
     ClearObject(&TxtBrush);
     ClearObject(&InactTxt);
     ClearObject(&HgltTxt);
+    ClearObject(&LifeBrush);
     ClearObject(&iWriteFactory);
     ClearObject(&nrmText);
     ClearObject(&midText);
@@ -171,6 +176,7 @@ void ReleaseResources()
     ClearObject(&bmpPremHBoard);
     ClearObject(&bmpPremVBoard);
     ClearObject(&bmpRock);
+    ClearObject(&bmpSpit);
 
     for (int i = 0; i < 10; i++)ClearObject(&bmpBackground[i]);
     for (int i = 0; i < 2; i++)ClearObject(&bmpBomb[i]);
@@ -273,6 +279,7 @@ void InitGame()
     secs = 0;
     gold = 50;
     level = 1;
+    sling_lifes = 200;
 
     ClearObject(&Background);
     Background = dll::CreateFieldItem(fields::background, 0, 50.0f);
@@ -292,6 +299,7 @@ void InitGame()
         for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
     vBoards.clear();
     
+    vSpits.clear();
     
     InitLevel();
 }
@@ -601,6 +609,7 @@ void CreateResources()
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightGreen), &TxtBrush);
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Red), &HgltTxt);
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Gray), &InactTxt);
+            hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Magenta), &LifeBrush);
 
             if (hr != S_OK)
             {
@@ -665,6 +674,12 @@ void CreateResources()
         if (!bmpRock)
         {
             LogError(L"Error loading bmpRock !");
+            ErrExit(eD2D);
+        }
+        bmpSpit = Load(L".\\res\\img\\pigs\\spit.png", Draw);
+        if (!bmpSpit)
+        {
+            LogError(L"Error loading bmpSpit !");
             ErrExit(eD2D);
         }
         for (int i = 0; i < 10; i++)
@@ -890,9 +905,41 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
         ///////////////////////////////////////////////////////
 
+        // PIG **********************************************
 
+        if (Evil)
+        {
+            if (rand() % 600 == 6)
+            {
+                if (sound)mciSendString(L"play .\\res\\snd\\spit.wav", NULL, NULL, NULL);
+                vSpits.push_back(dll::ITEM(Evil->x, Evil->y + (Evil->ey - Evil->y) / 2, 40.0f, 40.0f));
+            }
+        }
 
-
+        if (!vSpits.empty())
+        {
+            for (std::vector<dll::ITEM>::iterator spit = vSpits.begin(); spit < vSpits.end(); spit++)
+            {
+                spit->x -= 1.5f;
+                spit->SetEdges();
+            }
+        }
+        if (!vSpits.empty() && Sling)
+        {
+            for (std::vector<dll::ITEM>::iterator spit = vSpits.begin(); spit < vSpits.end(); spit++)
+            {
+                if (!(spit->x > Sling->ex || spit->ex<Sling->x || spit->y>Sling->ey || spit->ey < Sling->y))
+                {
+                    vSpits.erase(spit);
+                    sling_lifes -= 10;
+                    if (sling_lifes <= 0)
+                    {
+                        GameOver();
+                    }
+                    break;
+                }
+            }
+        }
 
 
         //DRAW THINGS ********************************************
@@ -986,6 +1033,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
             else
                 Draw->DrawBitmap(bmpSling[0], D2D1::RectF(Sling->x, Sling->y, Sling->ex, Sling->ey));
+            Draw->DrawLine(D2D1::Point2F(5.0f, Sling->y), D2D1::Point2F(5.0f, Sling->y + (float)(sling_lifes / 1.5f)),
+                LifeBrush, 8.0f);
         }
         if (Terminator)
         {
@@ -1072,6 +1121,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 break;
             }
         }
+        if (!vSpits.empty())
+        {
+            for (std::vector<dll::ITEM>::iterator spit = vSpits.begin(); spit < vSpits.end(); spit++)
+                Draw->DrawBitmap(bmpSpit, D2D1::RectF(spit->x, spit->y, spit->ex, spit->ey));
+        }
+
 
 
         //STATUS ****************
