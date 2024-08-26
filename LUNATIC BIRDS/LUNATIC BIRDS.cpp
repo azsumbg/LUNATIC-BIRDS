@@ -97,6 +97,7 @@ ID2D1Bitmap* bmpPremHBoard = nullptr;
 ID2D1Bitmap* bmpPremVBoard = nullptr;
 ID2D1Bitmap* bmpRock = nullptr;
 ID2D1Bitmap* bmpSpit = nullptr;
+ID2D1Bitmap* bmpRip = nullptr;
 
 ID2D1Bitmap* bmpBomb[2] = { nullptr };
 ID2D1Bitmap* bmpGray[12] = { nullptr };
@@ -123,6 +124,7 @@ dll::FieldItem Ground = nullptr;
 dll::FieldItem Sling = nullptr;
 bool now_shooting = false;
 int sling_lifes = 200;
+bool game_over = false;
 
 dll::Bird Terminator = nullptr;
 float terminator_dest_x = 0;
@@ -177,6 +179,7 @@ void ReleaseResources()
     ClearObject(&bmpPremVBoard);
     ClearObject(&bmpRock);
     ClearObject(&bmpSpit);
+    ClearObject(&bmpRip);
 
     for (int i = 0; i < 10; i++)ClearObject(&bmpBackground[i]);
     for (int i = 0; i < 2; i++)ClearObject(&bmpBomb[i]);
@@ -682,6 +685,12 @@ void CreateResources()
             LogError(L"Error loading bmpSpit !");
             ErrExit(eD2D);
         }
+        bmpRip = Load(L".\\res\\img\\field\\rip.png", Draw);
+        if (!bmpRip)
+        {
+            LogError(L"Error loading bmpRip !");
+            ErrExit(eD2D);
+        }
         for (int i = 0; i < 10; i++)
         {
             wchar_t name[150] = L".\\res\\img\\field\\background\\";
@@ -930,17 +939,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             {
                 if (!(spit->x > Sling->ex || spit->ex<Sling->x || spit->y>Sling->ey || spit->ey < Sling->y))
                 {
+                    if(sound)mciSendString(L"play .\\res\\snd\\slinghit.wav", NULL, NULL, NULL);
                     vSpits.erase(spit);
                     sling_lifes -= 10;
-                    if (sling_lifes <= 0)
-                    {
-                        GameOver();
-                    }
+                    if (sling_lifes <= 0)game_over = true;
                     break;
                 }
             }
         }
-
 
         //DRAW THINGS ********************************************
 
@@ -1120,14 +1126,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 Draw->DrawBitmap(bmpBigPig[Evil->GetFrame()], D2D1::RectF(Evil->x, Evil->y, Evil->ex, Evil->ey));
                 break;
             }
+
+            Draw->DrawLine(D2D1::Point2F(Evil->ex + 2.0f, Evil->y),
+                D2D1::Point2F(Evil->ex + 2.0f, Evil->y + (float)(Evil->lifes / 2.2f)), LifeBrush, 8.0f);
         }
         if (!vSpits.empty())
         {
             for (std::vector<dll::ITEM>::iterator spit = vSpits.begin(); spit < vSpits.end(); spit++)
                 Draw->DrawBitmap(bmpSpit, D2D1::RectF(spit->x, spit->y, spit->ex, spit->ey));
         }
-
-
+        if (game_over)
+        {
+            pause = true;
+            ClearObject(&Sling);
+            Draw->DrawBitmap(bmpRip, D2D1::RectF(10.0f, scr_height - 157.0f, 110.0f, scr_height - 40.0f));
+            Draw->EndDraw();
+            if (sound)PlaySound(L".\\res\\snd\\killed.wav", NULL, SND_SYNC);
+            else Sleep(3000);
+            GameOver();
+        }
 
         //STATUS ****************
         wchar_t stat_line[200] = L"СТРЕЛЕЦ: ";
@@ -1160,8 +1177,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
         }
 
-        if (nrmText && HgltTxt)
-            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(10.0f, scr_height - 35.0f, scr_width, scr_height), HgltTxt);
+        if (nrmText && LifeBrush)
+            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(10.0f, scr_height - 35.0f, scr_width, scr_height), LifeBrush);
 
         //////////////////////
         Draw->EndDraw();
