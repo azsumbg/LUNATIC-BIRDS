@@ -75,6 +75,10 @@ D2D1_RECT_F b1Rect = { 0, 0, scr_width / 3 - 50.0f, 50.0f };
 D2D1_RECT_F b2Rect = { scr_width / 3, 0, scr_width * 2 / 3 - 50.0f, 50.0f };
 D2D1_RECT_F b3Rect = { scr_width * 2 / 3, 0, scr_width, 50.0f };
 
+D2D1_RECT_F b1TxtRect = { 20.0f, 10.0f, scr_width / 3 - 50.0f, 50.0f };
+D2D1_RECT_F b2TxtRect = { scr_width / 3, 10.0f, scr_width * 2 / 3 - 50.0f, 50.0f };
+D2D1_RECT_F b3TxtRect = { scr_width * 2 / 3 + 10.0f, 10.0f, scr_width, 50.0f };
+
 ID2D1Factory* iFactory = nullptr;
 ID2D1HwndRenderTarget* Draw = nullptr;
 
@@ -83,10 +87,10 @@ ID2D1SolidColorBrush* TxtBrush = nullptr;
 ID2D1SolidColorBrush* InactTxt = nullptr;
 ID2D1SolidColorBrush* HgltTxt = nullptr;
 ID2D1SolidColorBrush* LifeBrush = nullptr;
+ID2D1SolidColorBrush* StatusBrush = nullptr;
 
 IDWriteFactory* iWriteFactory = nullptr;
 IDWriteTextFormat* nrmText = nullptr;
-IDWriteTextFormat* midText = nullptr;
 IDWriteTextFormat* bigText = nullptr;
 
 ID2D1Bitmap* bmpBackground[10] = { nullptr };
@@ -164,12 +168,12 @@ void ReleaseResources()
     ClearObject(&Draw);
     ClearObject(&ButBckgBrush);
     ClearObject(&TxtBrush);
+    ClearObject(&StatusBrush);
     ClearObject(&InactTxt);
     ClearObject(&HgltTxt);
     ClearObject(&LifeBrush);
     ClearObject(&iWriteFactory);
     ClearObject(&nrmText);
-    ClearObject(&midText);
     ClearObject(&bigText);
 
     ClearObject(&bmpField);
@@ -306,15 +310,131 @@ void InitGame()
     
     InitLevel();
 }
+BOOL CheckRecord()
+{
+    if (score < 1)return no_record;
+    int result = 0;
+    CheckFile(record_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        std::wofstream rec(record_file);
+        rec << score << std::endl;
+        for (int i = 0; i < 16; ++i)rec << static_cast<int>(current_player[i]) << std::endl;
+        rec.close();
+        return first_record;
+    }
+    else
+    {
+        std::wifstream check(record_file);
+        check >> result;
+        check.close();
 
+        if (score > result)
+        {
+            std::wofstream rec(record_file);
+            rec << score << std::endl;
+            for (int i = 0; i < 16; ++i)rec << static_cast<int>(current_player[i]) << std::endl;
+            rec.close();
+            return record;
+        }
+    }
+    return no_record;
+}
 void GameOver()
 {
     KillTimer(bHwnd, bTimer);
     PlaySound(NULL, NULL, NULL);
 
+    switch (CheckRecord())
+    {
+    case no_record:
+        if (Draw && bigText && HgltTxt)
+        {
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));
+            Draw->DrawText(L"ПРЕТРЕПАХА ТЕ !", 16, bigText, D2D1::RectF(20.0f, 200.0f, scr_width, scr_height), HgltTxt);
+            Draw->EndDraw();
+        }
+        if (sound)PlaySound(L".\\res\\snd\\loose.wav", NULL, SND_SYNC);
+        else Sleep(4000);
+        break;
+
+    case first_record:
+        if (Draw && bigText && HgltTxt)
+        {
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));
+            Draw->DrawText(L"ПЪРВИ РЕКОРД !", 15, bigText, D2D1::RectF(20.0f, 200.0f, scr_width, scr_height), HgltTxt);
+            Draw->EndDraw();
+        }
+        if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_SYNC);
+        else Sleep(4000);
+        break;
+
+    case record:
+        if (Draw && bigText && HgltTxt)
+        {
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));
+            Draw->DrawText(L"СВЕТОВЕН РЕКОРД !", 18, bigText, D2D1::RectF(20.0f, 200.0f, scr_width, scr_height), HgltTxt);
+            Draw->EndDraw();
+        }
+        if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_SYNC);
+        else Sleep(4000);
+        break;
+    }
 
     bMsg.message = WM_QUIT;
     bMsg.wParam = 0;
+}
+void ShowRecord()
+{
+    int result = 0;
+    CheckFile(record_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"Все още няма рекорд !\n\nПостарай се повече", L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+
+    wchar_t txt[50] = L"СТРЕЛЕЦ: ";
+    wchar_t add[5] = L"\0";
+    wchar_t saved_player[16] = L"\0";
+
+    std::wifstream rec(record_file);
+    rec >> result;
+    for (int i = 0; i < 16; ++i)
+    {
+        int letter = 0;
+        rec >> letter;
+        saved_player[i] = static_cast<wchar_t>(letter);
+    }
+    rec.close();
+
+    wcscat_s(txt, saved_player);
+    wcscat_s(txt, L"\n\nСВЕТОВЕН РЕКОРД: ");
+    wsprintf(add, L"%d", result);
+    wcscat_s(txt, add);
+
+    result = 0;
+    for (int i = 0; i < 50; i++)
+    {
+        if (txt[i] != '\0')++result;
+        else break;
+    }
+
+    if (sound)mciSendString(L"play .\\res\\snd\\showrec.wav", NULL, NULL, NULL);
+
+    if (Draw && bigText && HgltTxt)
+    {
+        Draw->BeginDraw();
+        Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));
+        Draw->DrawText(txt, result, bigText, D2D1::RectF(20.0f, 200.0f, scr_width, scr_height), HgltTxt);
+        Draw->EndDraw();
+    }
+    Sleep(3000);
+
 }
 
 INT_PTR CALLBACK bDlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
@@ -348,6 +468,7 @@ INT_PTR CALLBACK bDlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
                 EndDialog(hwnd, IDCANCEL);
                 break;
             }
+            EndDialog(hwnd, IDOK);
             break;
         }
         break;
@@ -368,7 +489,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         bStore = CreateMenu();
 
         AppendMenu(bBar, MF_POPUP, (UINT_PTR)(bMain), L"Основно меню");
-        AppendMenu(bBar, MF_POPUP, (UINT_PTR)(bMain), L"Меню за данни");
+        AppendMenu(bBar, MF_POPUP, (UINT_PTR)(bStore), L"Меню за данни");
 
         AppendMenu(bMain, MF_STRING, mNew, L"Нова игра");
         AppendMenu(bMain, MF_SEPARATOR, NULL, NULL);
@@ -405,7 +526,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         if (pause)break;
         secs++;
         mins = secs / 60;
-        if (secs % 2 == 0)gold += 10;
+        gold += 10;
         break;
 
     case WM_SETCURSOR:
@@ -489,6 +610,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         break;
 
     case WM_COMMAND:
+        if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
         switch (LOWORD(wParam))
         {
         case mNew:
@@ -508,14 +630,53 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
             break;
 
 
+        case mHoF:
+            pause = true;
+            ShowRecord();
+            pause = false;
+            break;
         }
         break;
 
     case WM_LBUTTONDOWN:
         if (now_shooting || Terminator)break;
-        now_shooting = true;
-        terminator_dest_x = LOWORD(lParam);
-        terminator_dest_y = HIWORD(lParam);
+        if (HIWORD(lParam) <= 50)
+        {
+            if (LOWORD(lParam) > b1Rect.left && LOWORD(lParam) < b1Rect.right)
+            {
+                if (name_set)
+                {
+                    if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                    break;
+                }
+                if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+                if (DialogBox(bIns, MAKEINTRESOURCE(IDD_PLAYER), hwnd, &bDlgProc) == IDOK)name_set = true;
+                break;
+            }
+            if (LOWORD(lParam) > b2Rect.left && LOWORD(lParam) < b2Rect.right)
+            {
+                mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+                if (sound)
+                {
+                    PlaySound(NULL, NULL, NULL);
+                    sound = false;
+                    break;
+                }
+                else
+                {
+                    PlaySound(sound_file, NULL, SND_ASYNC|SND_LOOP);
+                    sound = true;
+                    break;
+                }
+            }
+
+        }
+        else
+        {
+            now_shooting = true;
+            terminator_dest_x = LOWORD(lParam);
+            terminator_dest_y = HIWORD(lParam);
+        }
         break;
 
     default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
@@ -613,6 +774,7 @@ void CreateResources()
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Red), &HgltTxt);
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Gray), &InactTxt);
             hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Magenta), &LifeBrush);
+            hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkSlateBlue), &StatusBrush);
 
             if (hr != S_OK)
             {
@@ -632,8 +794,6 @@ void CreateResources()
         {
             hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
                 DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 16, L"",  & nrmText);
-            hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
-                DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 32, L"", &midText);
             hr = iWriteFactory->CreateTextFormat(L"Bookman Old Style", NULL, DWRITE_FONT_WEIGHT_BOLD,
                 DWRITE_FONT_STYLE_OBLIQUE, DWRITE_FONT_STRETCH_NORMAL, 50, L"", &bigText);
             if (hr != S_OK)
@@ -911,6 +1071,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 }
             }
         }
+        if (Terminator && !vSpits.empty())
+        {
+            for (std::vector<dll::ITEM>::iterator spit = vSpits.begin(); spit < vSpits.end(); ++spit)
+            {
+                if (!(Terminator->x > spit->ex || Terminator->ex<spit->x
+                    || Terminator->y>spit->ey || Terminator->ey < spit->y))
+                {
+                    if (sound)mciSendString(L"play .\\res\\snd\\slinghit.wav", NULL, NULL, NULL);
+                    vSpits.erase(spit);
+                    ClearObject(&Terminator);
+                    score += 50;
+                    break;
+                }
+            }
+        }
 
         ///////////////////////////////////////////////////////
 
@@ -921,7 +1096,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             if (rand() % 600 == 6)
             {
                 if (sound)mciSendString(L"play .\\res\\snd\\spit.wav", NULL, NULL, NULL);
-                vSpits.push_back(dll::ITEM(Evil->x, Evil->y + (Evil->ey - Evil->y) / 2, 40.0f, 40.0f));
+                vSpits.push_back(dll::ITEM(Evil->x, Evil->y, 40.0f, 40.0f));
             }
         }
 
@@ -955,16 +1130,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             Draw->BeginDraw();
             Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), ButBckgBrush);
             if (name_set)
-                Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, InactTxt);
+                Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, InactTxt);
             else
             {
-                if (b1Hglt)Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, HgltTxt);
-                else Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1Rect, TxtBrush);
+                if (b1Hglt)Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, HgltTxt);
+                else Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, TxtBrush);
             }
-            if (b2Hglt)Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2Rect, HgltTxt);
-            else Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2Rect, TxtBrush);
-            if (b3Hglt)Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3Rect, HgltTxt);
-            else Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3Rect, TxtBrush);
+            if (b2Hglt)Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, HgltTxt);
+            else Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, TxtBrush);
+            if (b3Hglt)Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, HgltTxt);
+            else Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, TxtBrush);
         }
         Draw->DrawBitmap(bmpBackground[Background->GetFrame()], D2D1::RectF(Background->x, Background->y,
             Background->ex, Background->ey));
@@ -1160,6 +1335,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         wcscat_s(stat_line, L", РЕЗУЛТАТ: ");
         wsprintf(add, L"%d", score);
         wcscat_s(stat_line, add);
+        wcscat_s(stat_line, L", ");
         
         if (mins <= 9)wcscat_s(stat_line, L" 0");
         wsprintf(add, L"%d", mins);
@@ -1177,8 +1353,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
         }
 
-        if (nrmText && LifeBrush)
-            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(10.0f, scr_height - 35.0f, scr_width, scr_height), LifeBrush);
+        if (nrmText && StatusBrush)
+            Draw->DrawTextW(stat_line, size, nrmText, D2D1::RectF(10.0f, scr_height - 35.0f, scr_width, scr_height), StatusBrush);
 
         //////////////////////
         Draw->EndDraw();

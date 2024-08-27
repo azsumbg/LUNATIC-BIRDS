@@ -313,6 +313,8 @@ namespace dll
 
 			void SetJumpData(float start_x, float start_y, float end_x, float end_y)
 			{
+				vertical_line = false;
+				horizontal_line = false;
 				if (start_x < end_x)dir = dirs::right;
 				else if (start_x > end_x)dir = dirs::left;
 				else dir = dirs::stop;
@@ -320,10 +322,11 @@ namespace dll
 				if (end_x - start_x == 0)vertical_line = true;
 				else
 				{
-					vertical_line = false;
 					slope = (end_y - start_y) / (end_x - start_x);
 					intercept = start_y - slope * start_x;
 				}
+
+				if (end_y == start_y)horizontal_line = true;
 			}
 
 		public:
@@ -339,7 +342,7 @@ namespace dll
 			int GetDamage() const
 			{
 				if (go_up) return damage;
-				else return damage * 1.5;
+				else return (int)(damage * 1.5);
 			}
 
 			int GetFrame()
@@ -438,6 +441,7 @@ namespace dll
 						}
 						else
 						{
+							if (ey < 50)return false;
 							if (dir == dirs::right)
 							{
 								if (x < destination_x)
