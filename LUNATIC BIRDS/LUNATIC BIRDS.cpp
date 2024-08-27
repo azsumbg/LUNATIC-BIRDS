@@ -22,7 +22,7 @@
 
 #define bWinClassName L"CrazyShooters"
 
-#define sound_file L".\\res\\snd\\sound.wav"
+#define sound_file L".\\res\\snd\\main.wav"
 #define temp_file ".\\res\\data\\temp.dat"
 #define Ltemp_file L".\\res\\data\\temp.dat"
 #define help_file L".\\res\\data\\help.dat"
@@ -222,6 +222,7 @@ void InitLevel()
         if (!vBoards.empty())
             for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
         vBoards.clear();
+        secs = 0;
     }
 
     float next_board_x = 250.0f;
@@ -243,6 +244,8 @@ void InitLevel()
             break;
         }
         
+        if (Evil)
+            if (next_board_y + 45.0f > Evil->y)break;
     }
     for (int i = 0; i < 2; i++)
     {
@@ -990,6 +993,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 {
     bIns = hInstance;
     CreateResources();
+    PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
 
     while (bMsg.message != WM_QUIT)
     {
