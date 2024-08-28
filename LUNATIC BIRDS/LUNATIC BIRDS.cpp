@@ -27,7 +27,7 @@
 #define Ltemp_file L".\\res\\data\\temp.dat"
 #define help_file L".\\res\\data\\help.dat"
 #define record_file L".\\res\\data\\record.dat"
-#define save_file L".\\res\\data\save.dat"
+#define save_file L".\\res\\data\\save.dat"
 
 #define mNew 1001
 #define mExit 1002
@@ -119,7 +119,6 @@ int mins = 0;
 int secs = 0;
 int gold = 30;
 int level = 1;
-
 
 ////////////////////////////////////////////////
 
@@ -222,6 +221,7 @@ void InitLevel()
         if (!vBoards.empty())
             for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
         vBoards.clear();
+        vSpits.clear();
         secs = 0;
     }
 
@@ -439,6 +439,159 @@ void ShowRecord()
     Sleep(3000);
 
 }
+void SaveGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+        if (MessageBox(bHwnd, L"Предишната записана игра ще бъде загубена !\n\nНаистина ли да я презапиша ?",
+            L"Презапис ?", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)return;
+    }
+
+    std::wofstream save(save_file);
+
+    save << level << std::endl;
+    save << score << std::endl;
+    save << gold << std::endl;
+    save << secs << std::endl;
+    for (int i = 0; i < 16; i++)save << static_cast<int>(current_player[i]) << std::endl;
+    save << name_set << std::endl;
+    save << sling_lifes << std::endl;
+    save << game_over << std::endl;
+
+    for (int i = 0; i < 5; i++)save << static_cast<int>(BirdPool[i]) << std::endl;
+
+    save << vBoards.size() << std::endl;
+    if (!vBoards.empty())
+    {
+        for (int i = 0; i < vBoards.size(); i++)
+        {
+            save << static_cast<int>(vBoards[i]->GetType()) << std::endl;
+            save << vBoards[i]->x << std::endl;
+            save << vBoards[i]->y << std::endl;
+            save << vBoards[i]->lifes << std::endl;
+        }
+    }
+
+    if (!Evil)save << -1 << std::endl;
+    else
+    {
+        save << static_cast<int>(Evil->GetType()) << std::endl;
+        save << Evil->lifes << std::endl;
+    }
+
+    save.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
+    MessageBox(bHwnd, L"Играта е запазена !", L"Запис !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+void LoadGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+        if (MessageBox(bHwnd, L"Настоящата игра ще бъде загубена !\n\nНаистина ли да я презапиша ?",
+            L"Презапис ?", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)return;
+    }
+    else
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"Все още няма записана игра !\n\nПостарай се повече", L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+
+    result = 0;
+    
+    ClearObject(&Background);
+    Background = dll::CreateFieldItem(fields::background, 0, 50.0f);
+
+    ClearObject(&Ground);
+    Ground = dll::CreateFieldItem(fields::field, 0, scr_height - 40.0f);
+
+    ClearObject(&Sling);
+    Sling = dll::CreateFieldItem(fields::sling, 2.0f, scr_height - 170.0f);
+
+    ClearObject(&Terminator);
+    ClearObject(&Evil);
+    vSpits.clear();
+
+    if (!vBoards.empty())
+        for (int i = 0; i < vBoards.size(); i++)ClearObject(&vBoards[i]);
+    vBoards.clear();
+    
+    std::wifstream save(save_file);
+
+    save >> level;
+    save >> score;
+    save >> gold;
+    save >> secs;
+    for (int i = 0; i < 16; i++)
+    {
+        int letter = 0;
+        save >> letter;
+        current_player[i] = static_cast<wchar_t>(letter);
+    }
+    save >> name_set;
+    save >> sling_lifes;
+    save >> game_over;
+
+    for (int i = 0; i < 5; i++)
+    {
+        int type = -1;
+        save >> type;
+        BirdPool[i] = static_cast<birds>(type);
+    }
+
+    save >> result;
+    if (result > 0)
+    {
+        for (int i = 0; i < result; i++)
+        {
+            int type = -1;
+            float s_x = 0;
+            float s_y = 0;
+            int lifes = 0;
+
+            save >> type;
+            save >> s_x;
+            save >> s_y;
+            save >> lifes;
+
+            vBoards.push_back(dll::CreateFieldItem(static_cast<fields>(type), s_x, s_y));
+            vBoards.back()->lifes = lifes;
+        }
+    }
+
+    save >> result;
+
+    if (result > 0)
+    {
+        int lifes = 0;
+        save >> lifes;
+        
+        switch (static_cast<pigs>(result))
+        {
+        case pigs::pig:
+            Evil = dll::CreatePig(460.0f, scr_height - 150.0f, pigs::pig);
+            break;
+
+        case pigs::big_pig:
+            Evil = dll::CreatePig(460.0f, scr_height - 125.0f, pigs::big_pig);
+            break;
+        }
+
+        Evil->lifes = lifes;
+    }
+
+    save.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
+    MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
 
 INT_PTR CALLBACK bDlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -466,7 +619,7 @@ INT_PTR CALLBACK bDlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
                 wcscpy_s(current_player, L"ONE CRAZY BIRD");
                 name_set = false;
                 
-                if (sound)mciSendString(L"play .\\res\\exclamation.wav", NULL, NULL, NULL);
+                if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
                 MessageBox(bHwnd, L"Ха, ха, ха ! Забрави си името !", L"Забраватор !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
                 EndDialog(hwnd, IDCANCEL);
                 break;
@@ -509,7 +662,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
 
     case WM_CLOSE:
         pause = true;
-        if (sound)mciSendString(L"play .\\res\\exclamation.wav", NULL, NULL, NULL);
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
         if (MessageBox(hwnd, L"Ако излезеш, ще загубиш тази игра !\n\nНаистина ли излизаш ?",
             L"Изход ?", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)
         {
@@ -618,7 +771,7 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
         {
         case mNew:
             pause = true;
-            if (sound)mciSendString(L"play .\\res\\exclamation.wav", NULL, NULL, NULL);
+            if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
             if (MessageBox(hwnd, L"Ако продължиш, ще загубиш тази игра !\n\nНаистина ли рестартираш ?",
                 L"Рестарт ?", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)
             {
@@ -632,6 +785,17 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
             SendMessage(hwnd, WM_CLOSE, NULL, NULL);
             break;
 
+        case mSave:
+            pause = true;
+            SaveGame();
+            pause = false;
+            break;
+
+        case mLoad:
+            pause = true;
+            LoadGame();
+            pause = false;
+            break;
 
         case mHoF:
             pause = true;
