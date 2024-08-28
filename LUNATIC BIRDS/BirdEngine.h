@@ -317,8 +317,7 @@ namespace dll
 				horizontal_line = false;
 				if (start_x < end_x)dir = dirs::right;
 				else if (start_x > end_x)dir = dirs::left;
-				else dir = dirs::stop;
-
+				
 				if (end_x - start_x == 0)vertical_line = true;
 				else
 				{
@@ -392,17 +391,17 @@ namespace dll
 					initial_y = sy;
 					destination_x = dest_x;
 					destination_y = dest_y;
-
-					if (initial_y == destination_y)horizontal_line = true;
-
+					go_up = true;
 					SetJumpData(sx, sy, dest_x, dest_y);
 				}
 				else
 				{
+					if (ey <= 50.0f)return false;
 					if (go_up)
 					{
 						if (horizontal_line)
 						{
+							if (ey <= 50.0f)return false;
 							if (dir == dirs::right)
 							{
 								x++;
@@ -420,6 +419,7 @@ namespace dll
 						}
 						if (vertical_line)
 						{
+							if (ey <= 50.0f)return false;
 							if (y > destination_y)
 							{
 								y--; 
@@ -437,11 +437,9 @@ namespace dll
 								SetJumpData(initial_x, initial_y, destination_x, destination_y);
 								return true;
 							}
-							
 						}
 						else
 						{
-							if (ey < 50)return false;
 							if (dir == dirs::right)
 							{
 								if (x < destination_x)
@@ -522,8 +520,10 @@ namespace dll
 					}
 					else
 					{
+						if (horizontal_line && ey <= 50)return false;
 						if (vertical_line)
 						{
+							if (ey <= 50)return false;
 							if (y < destination_y)
 							{
 								y++;
@@ -575,7 +575,6 @@ namespace dll
 							}
 						}
 					}
-
 				}
 
 				return true;

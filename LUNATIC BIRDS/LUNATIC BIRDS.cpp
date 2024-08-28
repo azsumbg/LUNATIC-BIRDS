@@ -592,6 +592,50 @@ void LoadGame()
     if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
     MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
 }
+void ShowHelp()
+{
+    int result = 0;
+    CheckFile(help_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"Липсва помощ за играта !\n\nСвържете се с разработчика", L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+
+    wchar_t help_txt[1000] = L"\0";
+
+    std::wifstream help(help_file);
+    help >> result;
+    for (int i = 0; i < result; ++i)
+    {
+        int letter = 0;
+        help >> letter;
+        help_txt[i] = static_cast<wchar_t>(letter);
+    }
+    help.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\help.wav", NULL, NULL, NULL);
+    if (Draw && nrmText && ButBckgBrush && TxtBrush && HgltTxt && InactTxt && StatusBrush)
+    {
+        Draw->BeginDraw();
+        Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkCyan));
+        Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), ButBckgBrush);
+        if (name_set)
+            Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, InactTxt);
+        else
+        {
+            if (b1Hglt)Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, HgltTxt);
+            else Draw->DrawText(L"СТРЕЛЕЦ", 8, nrmText, b1TxtRect, TxtBrush);
+        }
+        if (b2Hglt)Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, HgltTxt);
+        else Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, TxtBrush);
+        if (b3Hglt)Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, HgltTxt);
+        else Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, TxtBrush);
+        Draw->DrawTextW(help_txt, result, nrmText, D2D1::RectF(10.0f, 150.0f, scr_width, scr_height), StatusBrush);
+        Draw->EndDraw();
+    }
+}
 
 INT_PTR CALLBACK bDlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -836,7 +880,22 @@ LRESULT CALLBACK bWinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPa
                     break;
                 }
             }
-
+            if (LOWORD(lParam) > b3Rect.left && LOWORD(lParam) < b3Rect.right)
+            {
+                if (!show_help)
+                {
+                    show_help = true; 
+                    pause = true;
+                    ShowHelp();
+                    break;
+                }
+                else
+                {
+                    pause = false;
+                    show_help = false;
+                    break;
+                }
+            }
         }
         else
         {
